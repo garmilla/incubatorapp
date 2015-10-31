@@ -99,17 +99,19 @@ def combineSeries(series1, series2):
         timestamps = timestamps1
     return timestamps, values1, values2
 
-if __name__ == '__main__':
-    # Get FRED series for inventory to sales ratio
-    seriesFred = fetchSeriesFred('ISRATIO')
-    seriesQuandl = fetchSeriesQuandl('ODA', 'POILAPSP_INDEX', 'Value')
-    # Put the two series into a Bokeh timeseries
+def plotQuandlFredSeries(outputFile, argsFred, argsQuandl, title, labelFred, labelQuandl, startFred, endFred):
+    seriesFred = fetchSeriesFred(*argsFred)
+    seriesQuandl = fetchSeriesQuandl(*argsQuandl)
     timestamps, valuesFred, valuesQuandl = combineSeries(seriesFred, seriesQuandl)
-    output_file("ISRATIO_POILAPSP.html")
-    s1 = figure(x_axis_type="datetime", x_axis_label="Time", y_axis_label="POILAPSP", tools=TOOLS)
-    s1.title = "Inventory to Sales Ratio vs Blended Crude Oil"
-    s1.extra_y_ranges = {"FRED": Range1d(start=1.2, end=1.55), "POILAPSP": Range1d(start=0, end=60)}
-    s1.add_layout(LinearAxis(y_range_name="FRED", axis_label='ISRATIO'), 'right')
-    s1.line(timestamps, valuesFred, legend='ISRATIO', y_range_name="FRED", color='blue')
-    s1.line(timestamps, valuesQuandl, legend='POILAPSP', color='red')
+    output_file(outputFile)
+    s1 = figure(x_axis_type="datetime", x_axis_label="Time", y_axis_label=labelQuandl, tools=TOOLS)
+    s1.title = title
+    s1.extra_y_ranges = {"FRED": Range1d(start=startFred, end=endFred)}
+    s1.add_layout(LinearAxis(y_range_name="FRED", axis_label=labelFred), 'right')
+    s1.line(timestamps, valuesFred, legend=labelFred, y_range_name="FRED", color='blue')
+    s1.line(timestamps, valuesQuandl, legend=labelQuandl, color='red')
     show(s1)
+
+if __name__ == '__main__':
+    plotQuandlFredSeries('ISRATIO_WTI.html', ('ISRATIO',), ('ODA', 'POILAPSP_INDEX', 'Value'),\
+                         "Inventory to Sales Ratio vs Blended Crude Oil", "ISRATIO", "WTI", 1.2, 1.55)
