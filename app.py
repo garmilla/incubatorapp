@@ -33,7 +33,7 @@ def fetchSeriesFred(seriesId):
     series.index = pd.to_datetime(series.index)
     return series
 
-def fetchSeriesQuandl(database, dataset):
+def fetchSeriesQuandl(database, dataset, columnName):
     """
     Fetch a time series in database `database` and dataset `dataset`
     convert it to a Pandas series. This function uses the closing prices.
@@ -41,9 +41,10 @@ def fetchSeriesQuandl(database, dataset):
     url = "{0}/{1}/{2}{3}".format(urlQuandl, database, dataset, urlSuffixQuandl) 
     r = requests.get(url)
     dataset = r.json()['dataset']['data']
+    idx = r.json()['dataset']['column_names'].index(columnName)
     data = {}
     for element in dataset:
-        data[element[0]] = element[4]
+        data[element[0]] = element[idx]
     series = pd.Series(data)
     series = series.astype(pd.np.float64)
     series.index = pd.to_datetime(series.index)
@@ -102,13 +103,14 @@ if __name__ == '__main__':
     # Get FRED series for inventory to sales ratio
     seriesFred = fetchSeriesFred('ISRATIO')
     # Get WTI closing series from QUANDL
-    seriesQuandl = fetchSeriesQuandl('WIKI', 'WTI')
+    seriesQuandl = fetchSeriesQuandl('BP', 'SPOT_CRUDE_OIL_PRICES', u'West Texas Intermediate')
     # Put the two series into a Bokeh timeseries
     timestamps, valuesFred, valuesQuandl = combineSeries(seriesFred, seriesQuandl)
     output_file("ISRatio_WTI.html")
-    s1 = figure(x_axis_type="datetime", tools=TOOLS)
-    s1.extra_y_ranges = {"FRED": Range1d(start=1, end=1.5), "WTI": Range1d(start=0, end=60)}
-    s1.add_layout(LinearAxis(y_range_name="FRED"), 'right')
+    s1 = figure(x_axis_type="datetime", x_axis_label="Time", y_axis_label="WTI", tools=TOOLS)
+    s1.title = "Inventory to Sales Ratio vs Crude Oil WTI"
+    s1.extra_y_ranges = {"FRED": Range1d(start=1.2, end=1.5), "WTI": Range1d(start=0, end=60)}
+    s1.add_layout(LinearAxis(y_range_name="FRED", axis_label='ISRATIO'), 'right')
     s1.line(timestamps, valuesFred, legend='ISRATIO', y_range_name="FRED", color='blue')
     s1.line(timestamps, valuesQuandl, legend='WTI', color='red')
     show(s1)
