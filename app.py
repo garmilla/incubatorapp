@@ -115,3 +115,5 @@ def plotQuandlFredSeries(outputFile, argsFred, argsQuandl, title, labelFred, lab
 if __name__ == '__main__':
     plotQuandlFredSeries('ISRATIO_WTI.html', ('ISRATIO',), ('ODA', 'POILAPSP_INDEX', 'Value'),\
                          "Inventory to Sales Ratio vs Blended Crude Oil", "ISRATIO", "WTI", 1.2, 1.55)
+    plotQuandlFredSeries('LFPART_WTI.html', ('CIVPART',), ('ODA', 'POILAPSP_INDEX', 'Value'),\
+                         "Labor Force Participation vs Blended Crude Oil", "LFPART", "WTI", 58.0, 68.0)
