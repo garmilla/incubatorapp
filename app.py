@@ -2,8 +2,12 @@ from collections import OrderedDict
 import requests
 import numpy as np
 import pandas as pd
-from bokeh.plotting import figure, show, output_file
+from bokeh.plotting import figure, save, output_file, vplot
 from bokeh.models import LinearAxis, Range1d
+
+from flask import Flask, render_template, request, redirect
+
+app = Flask(__name__)
 
 urlFred = 'https://api.stlouisfed.org/fred'
 apiKeyFred = 'c265baefbe397fa81b57baabdb060c40'
@@ -103,17 +107,28 @@ def plotQuandlFredSeries(outputFile, argsFred, argsQuandl, title, labelFred, lab
     seriesFred = fetchSeriesFred(*argsFred)
     seriesQuandl = fetchSeriesQuandl(*argsQuandl)
     timestamps, valuesFred, valuesQuandl = combineSeries(seriesFred, seriesQuandl)
-    output_file(outputFile)
-    s1 = figure(x_axis_type="datetime", x_axis_label="Time", y_axis_label=labelQuandl, tools=TOOLS)
-    s1.title = title
-    s1.extra_y_ranges = {"FRED": Range1d(start=startFred, end=endFred)}
-    s1.add_layout(LinearAxis(y_range_name="FRED", axis_label=labelFred), 'right')
-    s1.line(timestamps, valuesFred, legend=labelFred, y_range_name="FRED", color='blue')
-    s1.line(timestamps, valuesQuandl, legend=labelQuandl, color='red')
-    show(s1)
+    chart = figure(x_axis_type="datetime", x_axis_label="Time", y_axis_label=labelQuandl, tools=TOOLS)
+    chart.title = title
+    chart.extra_y_ranges = {"FRED": Range1d(start=startFred, end=endFred)}
+    chart.add_layout(LinearAxis(y_range_name="FRED", axis_label=labelFred), 'right')
+    chart.line(timestamps, valuesFred, legend=labelFred, y_range_name="FRED", color='blue')
+    chart.line(timestamps, valuesQuandl, legend=labelQuandl, color='red')
+    return chart
+
+output_file('templates/index.html')
+chart1 = plotQuandlFredSeries('ISRATIO_WTI.html', ('ISRATIO',), ('ODA', 'POILAPSP_INDEX', 'Value'),\
+                     "Inventory to Sales Ratio vs Blended Crude Oil", "ISRATIO", "WTI", 1.2, 1.55)
+chart2 = plotQuandlFredSeries('LFPART_WTI.html', ('CIVPART',), ('ODA', 'POILAPSP_INDEX', 'Value'),\
+                     "Labor Force Participation vs Blended Crude Oil", "LFPART", "WTI", 58.0, 68.0)
+save(vplot(chart1, chart2))
+
+@app.route('/')
+def main():
+  return redirect('/index')
+
+@app.route('/index')
+def index():
+  return render_template('index.html')
 
 if __name__ == '__main__':
-    plotQuandlFredSeries('ISRATIO_WTI.html', ('ISRATIO',), ('ODA', 'POILAPSP_INDEX', 'Value'),\
-                         "Inventory to Sales Ratio vs Blended Crude Oil", "ISRATIO", "WTI", 1.2, 1.55)
-    plotQuandlFredSeries('LFPART_WTI.html', ('CIVPART',), ('ODA', 'POILAPSP_INDEX', 'Value'),\
-                         "Labor Force Participation vs Blended Crude Oil", "LFPART", "WTI", 58.0, 68.0)
+    app.run(port=33507)
