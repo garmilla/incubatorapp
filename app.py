@@ -15,7 +15,7 @@ urlSuffixFred = '&api_key={0}&file_type=json'.format(apiKeyFred)
 
 urlQuandl = 'https://www.quandl.com/api/v3/datasets'
 apiKeyQuandl = '8_FFJtgQm-FWzKv6S--d'
-urlSuffixQuandl = '?api_key={0}'.format(apiKeyQuandl)
+urlSuffixQuandl = '.json?api_key={0}'.format(apiKeyQuandl)
 
 TOOLS="resize,pan,wheel_zoom,box_zoom,reset,previewsave"
 
@@ -103,24 +103,30 @@ def combineSeries(series1, series2):
         timestamps = timestamps1
     return timestamps, values1, values2
 
-def plotQuandlFredSeries(outputFile, argsFred, argsQuandl, title, labelFred, labelQuandl, startFred, endFred):
-    seriesFred = fetchSeriesFred(*argsFred)
-    seriesQuandl = fetchSeriesQuandl(*argsQuandl)
-    timestamps, valuesFred, valuesQuandl = combineSeries(seriesFred, seriesQuandl)
-    chart = figure(x_axis_type="datetime", x_axis_label="Time", y_axis_label=labelQuandl, tools=TOOLS)
+def plotSeries(series1, series2, title, label1, label2, start2, end2):
+    timestamps, values1, values2 = combineSeries(series1, series2)
+    chart = figure(x_axis_type="datetime", x_axis_label="Time", y_axis_label=label1, tools=TOOLS)
     chart.title = title
-    chart.extra_y_ranges = {"FRED": Range1d(start=startFred, end=endFred)}
-    chart.add_layout(LinearAxis(y_range_name="FRED", axis_label=labelFred), 'right')
-    chart.line(timestamps, valuesFred, legend=labelFred, y_range_name="FRED", color='blue')
-    chart.line(timestamps, valuesQuandl, legend=labelQuandl, color='red')
+    chart.extra_y_ranges = {"Y2": Range1d(start=start2, end=end2)}
+    chart.add_layout(LinearAxis(y_range_name="Y2", axis_label=label2), 'right')
+    chart.line(timestamps, values1, legend=label1, color='blue')
+    chart.line(timestamps, values2, legend=label2, y_range_name="Y2", color='red')
     return chart
 
 output_file('templates/index.html')
-chart1 = plotQuandlFredSeries('ISRATIO_WTI.html', ('ISRATIO',), ('ODA', 'POILAPSP_INDEX', 'Value'),\
-                     "Inventory to Sales Ratio vs Blended Crude Oil", "ISRATIO", "WTI", 1.2, 1.55)
-chart2 = plotQuandlFredSeries('LFPART_WTI.html', ('CIVPART',), ('ODA', 'POILAPSP_INDEX', 'Value'),\
-                     "Labor Force Participation vs Blended Crude Oil", "LFPART", "WTI", 58.0, 68.0)
-save(vplot(chart1, chart2))
+seriesFred = fetchSeriesFred('ISRATIO')
+seriesQuandl = fetchSeriesQuandl('ODA', 'POILAPSP_INDEX', 'Value')
+chart1 = plotSeries(seriesQuandl, seriesFred, "Inventory to Sales Ratio vs Blended Crude Oil", "OIL", "ISRATIO", 1.2, 1.55)
+seriesFred = fetchSeriesFred('CIVPART')
+chart2 = plotSeries(seriesQuandl, seriesFred, "Labor Force Participation vs Blended Crude Oil", "OIL", "LFPART", 58.0, 68.0)
+seriesQuandl2 = fetchSeriesQuandl('YAHOO', 'INDEX_GSPC', 'Close')
+seriesFred = fetchSeriesFred('WALCL')
+chart3 = plotSeries(seriesFred, seriesQuandl2, "Fed Balance Sheet vs S&P 500", "WALCL", "S&P 500", 500.0, 2050.0)
+chart3.legend.orientation = 'bottom_right'
+seriesQuandl2 = fetchSeriesQuandl('GOOG', 'NYSE_SEA', 'Close')
+#seriesQuandl3 = fetchSeriesQuandl('LLOYDS', 'BDI', 'Index')
+chart4 = plotSeries(seriesQuandl, seriesQuandl2, "Global Shipping Index SEA vs Blended Crude Oil", "OIL", "SEA", 8.0, 30.0)
+save(vplot(chart1, chart2, chart3, chart4))
 
 @app.route('/')
 def main():
